@@ -129,6 +129,11 @@ app.get('/history.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'history.html'));
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Handle Voting Logic
 io.on("connection", async (socket) => {
   console.log("A user connected");

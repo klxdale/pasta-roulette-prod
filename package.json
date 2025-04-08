@@ -14,14 +14,6 @@
     "socket.io": "^4.7.2"
   },
   "engines": {
-    "node": "16.x"
-  },
-  "keywords": [
-    "pasta",
-    "voting",
-    "socket.io",
-    "mongodb"
-  ],
-  "author": "",
-  "license": "MIT"
+    "node": ">=16.x"
+  }
 }
