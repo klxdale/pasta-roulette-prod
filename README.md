@@ -1,4 +1,4 @@
-# Pasta Preference Tracker
+# Pasta Roulette Web App Code
 
 A web application that allows users to vote on their favorite pasta types and track rankings over time. The application features a real-time voting system and historical data visualization.
 
