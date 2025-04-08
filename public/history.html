@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasta Rankings History</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: url('texture.jpg') repeat;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left {
+            width: 50%;
+        }
+        .header-title {
+            font-size: 2em;
+            margin: 0 0 10px 0;
+            color: yellow;
+            text-align: left;
+        }
+        .header-subtitle {
+            color: #fff;
+            text-align: left;
+            font-size: 1.1em;
+        }
+        .header-right {
+            width: 25%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .current-leader {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .current-leader img {
+            width: 160px;
+            height: 120px;
+            object-fit: contain;
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 0 2px black;
+        }
+        .current-leader-content {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .current-leader h3 {
+            margin: 0;
+            font-size: 1.2em;
+            color: #FFD700;
+        }
+        .current-leader .pasta-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .current-leader .days-at-top {
+            font-size: 1.1em;
+            color: #fff;
+        }
+        .back-button-container {
+            width: 25%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            padding-right: 20px;
+        }
+        .back-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #FFD700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .back-button:hover {
+            background: #f0f0f0;
+            transform: scale(1.1);
+        }
+        .back-button img {
+            width: 24px;
+            height: 24px;
+        }
+        .back-button-text {
+            color: #fff;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            color: yellow;
+        }
+        .header p {
+            margin: 0;
+            font-size: 1.2em;
+            color: yellow;
+        }
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .nav-links a {
+            color: yellow;
+            text-decoration: none;
+            padding: 5px 10px;
+            border: 1px solid yellow;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .nav-links a:hover {
+            background: yellow;
+            color: black;
+        }
+        .chart-container {
+            flex: 1;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            margin: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid black;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 90vh;
+            position: relative;
+            overflow: visible;
+        }
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: black;
+            border-top: 1px solid #333;
+        }
+        .footer-left {
+            font-size: 14px;
+            color: yellow;
+        }
+        .footer-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .footer-right span {
+            color: yellow;
+        }
+        .footer form {
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .footer form:hover {
+            opacity: 1;
+        }
+        @media screen and (max-width: 850px) {
+            .header {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .header-left, .header-right {
+                width: 100%;
+                margin: 10px 0;
+            }
+            .header-title {
+                font-size: 1.4em;
+                text-align: center;
+            }
+            .header-subtitle {
+                font-size: 0.77em;
+                text-align: center;
+            }
+            .chart-container {
+                margin: 10px;
+                padding: 10px;
+                height: 100vh !important;
+                min-height: 100vh !important;
+                max-height: 100vh !important;
+            }
+            .footer {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1 class="header-title">Pasta Leaderboard Over Time</h1>
+            <p class="header-subtitle">Track how pasta preferences have evolved over time</p>
+        </div>
+        <div class="header-right">
+            <div class="current-leader">
+                <img id="currentLeaderImage" src="" alt="Current Leader">
+                <div class="current-leader-content">
+                    <h3>Current #1 Pasta</h3>
+                    <div style="font-size: 0.7em; color: #aaa; margin-bottom: 5px;">Refreshed daily at 11:00:00 AEST</div>
+                    <div class="pasta-name" id="currentLeader">Loading...</div>
+                    <div class="days-at-top" id="daysAtTop">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="back-button-container">
+            <a href="/" class="back-button">
+                <img src="previous_page.png" alt="Back to Voting">
+            </a>
+            <div class="back-button-text">Click to return<br>to voting</div>
+        </div>
+    </div>
+    <div class="chart-container">
+        <canvas id="rankingsChart"></canvas>
+    </div>
+    <div class="footer">
+        <div class="footer-left">
+            <span>Images from Freepik and Wikipedia</span>
+        </div>
+        <div class="footer-right">
+            <span>Gary Trousers 2025</span>
+            <form action="https://www.paypal.com/donate" method="post" target="_top">
+                <input type="hidden" name="hosted_button_id" value="LC8L9PQURBFZU" />
+                <input type="image" src="https://www.paypalobjects.com/en_AU/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Donate">
+            </form>
+        </div>
+    </div>
+    <script>
+        const socket = io();
+        let chart;
+
+        // Define pasta icons mapping 
+        const pastaIcons = {
+            'SPAGHETTI': 'pasta_icons/SPAGHETTI_CROPPED.png',
+            'FETTUCCINE': 'pasta_icons/FETTUCCINE_CROPPED.png',
+            'PENNE': 'pasta_icons/PENNE_CROPPED.png',
+            'FARFALLE': 'pasta_icons/FARFALLE_CROPPED.png',
+            'RIGATONI': 'pasta_icons/RIGATONI_CROPPED.png',
+            'MACARONI': 'pasta_icons/MACARONI_CROPPED.png',
+            'FUSILLI': 'pasta_icons/FUSILLI_CROPPED.png',
+            'LINGUINE': 'pasta_icons/LINGUINE_CROPPED.png',
+            'BUCATINI': 'pasta_icons/BUCATINI_CROPPED.png',
+            'ZITI': 'pasta_icons/ZITI_CROPPED.png',
+            'CAPELLINI': 'pasta_icons/CAPELLINI_CROPPED.png',
+            'TAGLIATELLE': 'pasta_icons/TAGLIATELLE_CROPPED.png',
+            'PAPPARDELLE': 'pasta_icons/PAPPARDELLE_CROPPED.png',
+            'ORECCHIETTE': 'pasta_icons/ORECCHIETTE_CROPPED.png',
+            'CAVATAPPI': 'pasta_icons/CAVATAPPI_CROPPED.png',
+            'GEMELLI': 'pasta_icons/GEMELLI_CROPPED.png',
+            'ROTINI': 'pasta_icons/ROTINI_CROPPED.png',
+            'PIPE_RIGATE': 'pasta_icons/PIPE_RIGATE_CROPPED.png',
+            'CONCHIGLIONI': 'pasta_icons/CONCHIGLIONI_CROPPED.png',
+            'CASARECCE': 'pasta_icons/CASARECCE_CROPPED.png',
+            'PACCHERI': 'pasta_icons/PACCHERI_CROPPED.png',
+            'RUOTE': 'pasta_icons/RUOTE_CROPPED.png',
+            'RADIATORI': 'pasta_icons/RADIATORI_CROPPED.png',
+            'CAMPANELLE': 'pasta_icons/CAMPANELLE_CROPPED.png',
+            'MEZZE_MANICHE': 'pasta_icons/MEZZE_MANICHE_CROPPED.png',
+            'ORZO': 'pasta_icons/ORZO_CROPPED.png',
+            'MAFALDE': 'pasta_icons/MAFALDE_CROPPED.png',
+            'DITALINI': 'pasta_icons/DITALINI_CROPPED.png',
+            'PICCI': 'pasta_icons/PICCI_CROPPED.png'
+        };
+
+        // Define original pasta images mapping for the current leader
+        const originalPastaImages = {
+            'SPAGHETTI': 'SPAGHETTI.jpg',
+            'FETTUCCINE': 'FETTUCCINE.jpg',
+            'PENNE': 'PENNE.jpg',
+            'FARFALLE': 'FARFALLE.jpg',
+            'RIGATONI': 'RIGATONI.jpg',
+            'MACARONI': 'MACARONI.jpg',
+            'FUSILLI': 'FUSILLI.jpg',
+            'LINGUINE': 'LINGUINE.jpg',
+            'BUCATINI': 'BUCATINI.jpg',
+            'ZITI': 'ZITI.jpg',
+            'CAPELLINI': 'CAPELLINI.jpg',
+            'TAGLIATELLE': 'TAGLIATELLE.jpg',
+            'PAPPARDELLE': 'PAPPARDELLE.jpg',
+            'ORECCHIETTE': 'ORECCHIETTE.jpg',
+            'CAVATAPPI': 'CAVATAPPI.jpg',
+            'GEMELLI': 'GEMELLI.jpg',
+            'ROTINI': 'ROTINI.jpg',
+            'PIPE_RIGATE': 'PIPE_RIGATE.jpg',
+            'CONCHIGLIONI': 'CONCHIGLIONI.jpg',
+            'CASARECCE': 'CASARECCE.jpg',
+            'PACCHERI': 'PACCHERI.jpg',
+            'RUOTE': 'RUOTE.jpg',
+            'RADIATORI': 'RADIATORI.jpg',
+            'CAMPANELLE': 'CAMPANELLE.jpg',
+            'MEZZE_MANICHE': 'MEZZE_MANICHE.jpg',
+            'ORZO': 'ORZO.JPG',
+            'MAFALDE': 'MAFALDE.jpg',
+            'DITALINI': 'DITALINI.jpg',
+            'PICCI': 'PICCI.jpg'
+        };
+
+        // Image cache
+        const imageCache = new Map();
+        const originalImageCache = new Map();
+
+        // Load images dynamically with caching
+        async function loadPastaIcons() {
+            // Load cropped icons for chart
+            const croppedPromises = Object.entries(pastaIcons).map(([pasta, src]) => {
+                // Check cache first
+                if (imageCache.has(pasta)) {
+                    return Promise.resolve({pasta, img: imageCache.get(pasta)});
+                }
+
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        imageCache.set(pasta, img);
+                        resolve({pasta, img});
+                    };
+                    img.onerror = () => {
+                        console.error(`Failed to load cropped image for ${pasta} from ${src}`);
+                        resolve({pasta, img: null});
+                    };
+                    img.src = src;
+                });
+            });
+
+            // Load original images for current leader
+            const originalPromises = Object.entries(originalPastaImages).map(([pasta, src]) => {
+                // Check cache first
+                if (originalImageCache.has(pasta)) {
+                    return Promise.resolve({pasta, img: originalImageCache.get(pasta)});
+                }
+
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        originalImageCache.set(pasta, img);
+                        resolve({pasta, img});
+                    };
+                    img.onerror = () => {
+                        console.error(`Failed to load original image for ${pasta} from ${src}`);
+                        resolve({pasta, img: null});
+                    };
+                    img.src = src;
+                });
+            });
+
+            return Promise.all([...croppedPromises, ...originalPromises]);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const month = date.toLocaleString('default', { month: 'short' });
+            const day = date.getDate();
+            const year = date.getFullYear().toString().slice(-2);
+            return `${month} ${day}, ${year}`;
+        }
+
+        function getDaySuffix(day) {
+            if (day > 3 && day < 21) return 'th';
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        function calculateDaysAtTop(data) {
+            if (!data || data.length === 0) return 0;
+            const currentLeader = data[data.length - 1].rankings[0].name;
+            let days = 0;
+            for (let i = data.length - 1; i >= 0; i--) {
+                if (data[i].rankings[0].name === currentLeader) {
+                    days++;
+                } else {
+                    break;
+                }
+            }
+            return days;
+        }
+
+        // Custom plugin to control image size
+        const imageSizePlugin = {
+            id: 'imageSizePlugin',
+            beforeDraw: function(chart) {
+                const ctx = chart.ctx;
+                const datasets = chart.data.datasets;
+                
+                datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    const points = meta.data;
+                    
+                    points.forEach((point, index) => {
+                        if (point._datasetIndex === datasetIndex && point._index < points.length) {
+                            const value = dataset.data[index];
+                            if (value !== null && value <= 10) {
+                                const img = dataset.pointStyle;
+                                if (img) {
+                                    const x = point.x;
+                                    const y = point.y;
+                                    const size = 30; // Set fixed size for all icons
+                                    
+                                    // Draw the image at the specified size
+                                    ctx.save();
+                                    ctx.drawImage(img, x - size/2, y - size/2, size, size);
+                                    ctx.restore();
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+        };
+
+        async function createBumpChart(data) {
+            // Wait for all images to load
+            await loadPastaIcons();
+            
+            const ctx = document.getElementById('rankingsChart').getContext('2d');
+            
+            // Get all unique pastas that have ever been in the top 10
+            const allPastas = new Set();
+            data.slice(1).forEach(dateData => {
+                dateData.rankings.forEach(ranking => {
+                    if (ranking.rank <= 10) {
+                        allPastas.add(ranking.name);
+                    }
+                });
+            });
+            
+            // Create a sequential color palette with 29 unique colors
+            const colors = [
+                '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                '#1a55FF', '#2a75FF', '#3a95FF', '#4ab5FF', '#5ad5FF',
+                '#6af5FF', '#7a15FF', '#8a35FF', '#9a55FF', '#aa75FF',
+                '#ba95FF', '#caB5FF', '#daD5FF', '#eaF5FF', '#fa15FF',
+                '#0a35FF', '#1a55FF', '#2a75FF', '#3a95FF'
+            ];
+
+            // Create datasets for each pasta, excluding the first datetime
+            const datasets = Array.from(allPastas).map((pastaName, index) => {
+                // For mobile, only show last 2 snapshots, for desktop show last 10
+                const dataSlice = window.innerWidth <= 850 ? -2 : -10;
+                const pastaData = data.slice(dataSlice).map(dateData => {
+                    const ranking = dateData.rankings.find(r => r.name === pastaName);
+                    return ranking ? ranking.rank : null;
+                });
+
+                // Get the cached image
+                const img = imageCache.get(pastaName);
+                
+                return {
+                    label: pastaName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' '),
+                    data: pastaData,
+                    borderColor: colors[index],
+                    backgroundColor: colors[index],
+                    tension: 0.4,
+                    fill: false,
+                    pointStyle: img,
+                    // Add custom point rendering for values > 10
+                    pointRadius: function(context) {
+                        const value = context.raw;
+                        return value > 10 ? 0 : 20;
+                    },
+                    pointHoverRadius: function(context) {
+                        const value = context.raw;
+                        return value > 10 ? 0 : 20;
+                    }
+                };
+            });
+
+            // Destroy existing chart if it exists
+            if (chart) {
+                chart.destroy();
+            }
+
+            // Get the canvas and set its size
+            const canvas = document.getElementById('rankingsChart');
+            const chartCtx = canvas.getContext('2d');
+            
+            // Set canvas size based on container
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Create new chart with optimized options
+            chart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    // For mobile, only show last 2 snapshots, for desktop show last 10
+                    labels: data.slice(window.innerWidth <= 850 ? -2 : -10).map(dateData => formatDate(dateData.date)),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    layout: {
+                        padding: {
+                            top: 10,
+                            bottom: 10,
+                            left: 40,
+                            right: 40
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top 10 Pasta Rankings Over Time',
+                            font: {
+                                size: 20,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 10
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true,
+                            intersect: true,
+                            mode: 'point',
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    const pastaName = context.dataset.label;
+                                    const rank = context.parsed.y;
+                                    return [
+                                        pastaName,
+                                        `Rank: ${rank}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        line: {
+                            borderWidth: 2
+                        },
+                        point: {
+                            radius: 20,
+                            hoverRadius: 20
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'category',
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    left: 0,
+                                    right: 0,
+                                    top: 10
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                maxRotation: 0,
+                                minRotation: 0,
+                                padding: 10,
+                                callback: function(value, index, values) {
+                                    // For mobile, only show "Today" and "Yesterday"
+                                    if (window.innerWidth <= 850) {
+                                        if (index === values.length - 1) return 'Today';
+                                        if (index === values.length - 2) return 'Yesterday';
+                                        return '';
+                                    }
+                                    // For desktop, show first and last date
+                                    if (index === 0 || index === values.length - 1) {
+                                        const label = this.getLabelForValue(value);
+                                        return label.split(',')[0] + '\n' + label.split(',')[1];
+                                    }
+                                    return '';
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '10 ← Rank → 1',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    left: 20,
+                                    right: 10,
+                                    top: 0
+                                },
+                                rotation: 90
+                            },
+                            reverse: true,
+                            min: 0.5,
+                            max: 10.5,
+                            ticks: {
+                                stepSize: 1,
+                                padding: 10,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    // Show all integers from 1 to 10
+                                    if (Number.isInteger(value) && value >= 1 && value <= 10) {
+                                        return value;
+                                    }
+                                    return '';
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawTicks: false,
+                                drawBorder: false,
+                                drawOnChartArea: true,
+                                callback: function(value) {
+                                    // Only show gridlines for integers from 1 to 10
+                                    return value >= 1 && value <= 10 && Number.isInteger(value);
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            reverse: true,
+                            min: 0.5,
+                            max: 10.5,
+                            title: {
+                                display: true,
+                                text: '1 ← Rank → 10',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    left: 10,
+                                    right: 20,
+                                    top: 0
+                                },
+                                rotation: 90
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                padding: 10,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    // Show all integers from 1 to 10
+                                    if (Number.isInteger(value) && value >= 1 && value <= 10) {
+                                        return value;
+                                    }
+                                    return '';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'point',
+                        intersect: true
+                    },
+                    responsiveAnimationDuration: 0,
+                    hover: {
+                        animationDuration: 0
+                    }
+                },
+                plugins: [imageSizePlugin]
+            });
+        }
+
+        socket.on("historicalData", async (data) => {
+            // Update current leader info
+            if (data.length > 0) {
+                const currentData = data[data.length - 1];
+                const currentLeader = currentData.rankings[0];
+                document.getElementById('currentLeader').textContent = currentLeader.name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+                
+                // Set the current leader image to use the original pasta image
+                const leaderImage = document.getElementById('currentLeaderImage');
+                const imagePath = '/' + originalPastaImages[currentLeader.name];
+                console.log('Current Leader Name:', currentLeader.name);
+                console.log('Original Image Path:', imagePath);
+                console.log('Cropped Image Path:', pastaIcons[currentLeader.name]);
+                leaderImage.src = imagePath;
+                
+                // Add error handling for the image
+                leaderImage.onerror = function() {
+                    console.error(`Failed to load image for ${currentLeader.name} from path: ${imagePath}`);
+                    console.log('Falling back to cropped image:', pastaIcons[currentLeader.name]);
+                    // Fallback to cropped image if original fails
+                    leaderImage.src = pastaIcons[currentLeader.name];
+                };
+                
+                document.getElementById('daysAtTop').textContent = `Days at top: ${calculateDaysAtTop(data)}`;
+            }
+            
+            // Create the bump chart
+            await createBumpChart(data);
+        });
+
+        // Request historical data when page loads
+        socket.emit("requestHistoricalData");
+
+        // Preload images when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPastaIcons();
+        });
+    </script>
+</body>
+</html> 

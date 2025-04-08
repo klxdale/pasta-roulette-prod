@@ -1,19 +1,27 @@
 {
-  "name": "pasta-preference",
+  "name": "pasta-roulette",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A web app for voting on your favorite pasta types",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "mongodb": "^6.14.2",
-    "mongoose": "^8.12.1",
-    "socket.io": "^4.8.1"
-  }
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongodb": "^6.7.0",
+    "mongoose": "^6.7.0",
+    "socket.io": "^4.7.2"
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "keywords": [
+    "pasta",
+    "voting",
+    "socket.io",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT"
 }
